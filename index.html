@@ -20,7 +20,7 @@ header h1{font-size:18px;margin:0;font-weight:800}
 header small{opacity:.85;display:block;font-weight:400}
 main{padding:12px;max-width:760px;margin:auto}
 nav{position:fixed;bottom:0;inset-inline:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;border:0;background:none;padding:10px 2px;font-size:13px;color:var(--mut);font-weight:600}
+nav button{flex:1;border:0;background:none;padding:10px 2px;font-size:11px;color:var(--mut);font-weight:600}
 nav button b{display:block;font-size:20px}
 nav button.on{color:var(--pri);box-shadow:inset 0 3px 0 var(--pri)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
@@ -46,11 +46,11 @@ h2{font-size:15px;margin:16px 0 8px;color:var(--pri)}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app"><p style="text-align:center;margin-top:30vh;color:#5d7080">جاري التحميل...</p></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, getDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const cfg = {
@@ -62,10 +62,51 @@ const cfg = {
   appId: "1:931292515336:web:e73e61240c5cb9d311d5bd"
 };
 const fb = initializeApp(cfg), auth = getAuth(fb), db = getFirestore(fb);
+setPersistence(auth, browserLocalPersistence).catch(() => {});
 const AREAS = ["التجمع الخامس", "بدر", "العاصمة الإدارية"];
 const DOMAIN = "@ibrahem.app";
+const SEED = [
+["البنك الأهلي المصري","فرع القاهرة الجديدة (164)","التجمع الخامس",30.016857,31.426368],
+["البنك الأهلي المصري","فرع السبعين","التجمع الخامس",30.019320,31.427453],
+["البنك الأهلي المصري","فرع الحمد مول","التجمع الخامس",30.002708,31.424031],
+["البنك الأهلي المصري","فرع التجمع الأول","التجمع الخامس",30.072335,31.451097],
+["البنك الأهلي المصري","فرع بتروسبورت","التجمع الخامس",30.022297,31.444236],
+["البنك الأهلي المصري","فرع مول بوينت 90","التجمع الخامس",30.020239,31.495467],
+["البنك الأهلي المصري","فرع كايرو فيستيفال","التجمع الخامس",30.029157,31.408710],
+["بنك مصر","فرع مركز المدينة (141)","التجمع الخامس",30.005960,31.425437],
+["بنك مصر","فرع شارع التسعين (338)","التجمع الخامس",30.025978,31.481740],
+["بنك مصر","فرع أرابيلا بلازا","التجمع الخامس",29.991811,31.432157],
+["بنك مصر","فرع السبعين","التجمع الخامس",30.019043,31.429751],
+["بنك مصر","فرع أرض الفطيم","التجمع الخامس",30.037044,31.415510],
+["بنك مصر","فرع إمرالد تاون بلازا","التجمع الخامس",30.053125,31.430318],
+["بنك مصر","فرع ذا ووتر واي","التجمع الخامس",30.042271,31.475336],
+["CIB","فرع ميفيدا","التجمع الخامس",30.007604,31.530427],
+["CIB","فرع EDNC مول - سوديك","التجمع الخامس",30.015217,31.515371],
+["CIB","فرع سيتي سكوير مول","التجمع الخامس",30.054265,31.492682],
+["CIB","فرع كايرو ميديكال سنتر","التجمع الخامس",30.021037,31.434159],
+["CIB","فرع كونكورد بلازا","التجمع الخامس",30.025046,31.483895],
+["CIB","فرع الحمد مول","التجمع الخامس",30.002648,31.423719],
+["CIB","فرع مجمع البنوك (116)","التجمع الخامس",30.018580,31.422909],
+["CIB","فرع إمرالد تاون بلازا","التجمع الخامس",30.053273,31.430246],
+["CIB","فرع ذا ووتر واي","التجمع الخامس",30.042315,31.475399],
+["بنك القاهرة","فرع مون فالي","التجمع الخامس",30.024954,31.488461],
+["بنك الإسكندرية","فرع جرين تاور (305)","التجمع الخامس",30.025963,31.467129],
+["بنك الإسكندرية","فرع التجمع الخامس (2)","التجمع الخامس",30.049469,31.475536],
+["بنك فيصل الإسلامي","فرع فيفث أفينيو","التجمع الخامس",30.009842,31.494269],
+["EGBANK","فرع 131 (مجمع البنوك)","التجمع الخامس",30.019352,31.426573],
+["EGBANK","فرع ذا أدريس","التجمع الخامس",30.020598,31.422778],
+["HSBC","فرع القاهرة الجديدة","التجمع الخامس",30.016697,31.420183],
+["SAIB","فرع التجمع الخامس","التجمع الخامس",30.018652,31.420459],
+["البنك العربي","فرع القاهرة الجديدة","التجمع الخامس",30.020999,31.420371],
+["Bank NXT","فرع القاهرة الجديدة","التجمع الخامس",30.017010,31.419039],
+["E BANK","فرع التجمع الخامس","التجمع الخامس",30.016912,31.424789],
+["بنك مصر","فرع بدر","بدر",30.137205,31.725859],
+["البنك الأهلي المصري","فرع العاصمة الإدارية","العاصمة الإدارية",30.015360,31.732853],
+["بنك مصر","فرع العاصمة الإدارية","العاصمة الإدارية",30.012216,31.733323]
+];
 
-const S = { user: null, admin: false, tab: "left", banks: [], visits: [], plan: [], area: "", month: mk(new Date()), loaded: 0, ordered: null };
+
+const S = { user: null, admin: false, tab: "left", banks: [], visits: [], plan: [], area: "", month: mk(new Date()), loaded: 0, ordered: null, works: [], formBank: "", draft: { floors: [] } };
 const $ = s => document.querySelector(s);
 const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const today = () => new Date().toISOString().slice(0, 10);
@@ -102,6 +143,7 @@ function start() {
   unsub.push(onSnapshot(collection(db, "banks"), s => { S.banks = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.bank + a.branch).localeCompare(b.bank + b.branch, "ar")); S.loaded |= 1; ensureMonth(); render(); }));
   unsub.push(onSnapshot(query(collection(db, "visits"), where("month", "==", mk(new Date()))), s => { S.visits = s.docs.map(d => ({ id: d.id, ...d.data() })); S.loaded |= 2; ensureMonth(); render(); }));
   unsub.push(onSnapshot(doc(db, "plans", today()), s => { S.plan = s.exists() ? s.data().ids || [] : []; render(); }));
+  unsub.push(onSnapshot(collection(db, "works"), s => { S.works = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }));
   render();
 }
 /* أول كل شهر: كل بنك ياخد زيارة جديدة تلقائي (id ثابت علشان ما تتكررش) */
@@ -183,11 +225,13 @@ function banksView() {
   <label>اللوكيشن</label><input id="nl" placeholder="خط العرض,خط الطول" dir="ltr">
   <button class="btn" id="gps">📍 هات موقعي الحالي</button>
   <label style="display:block;margin-top:8px">ملاحظات</label><textarea id="nn" rows="2"></textarea>
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="nnw" style="width:auto;margin:0"> بنك جديد محتاج تركيب</label>
   <button class="btn p big" id="addb">حفظ البنك</button></div>
+  <button class="btn big" id="seed" style="margin-bottom:12px">⬇️ استيراد بنوك التجمع وبدر والعاصمة (${SEED.length} فرع)</button>
   <h2>كل البنوك (${S.banks.length})</h2>
   ${S.banks.map(b => `<div class="card" data-b="${b.id}"><div class="row sp"><div class="t">${esc(title(b))}</div><span class="tag">${esc(b.area)}</span></div>
   <div class="m">محطة ${esc(b.station || "-")} · ${hasLoc(b) ? "اللوكيشن متسجل ✅" : "من غير لوكيشن ❌"}</div>
-  <div class="row" style="margin-top:8px"><button class="btn" data-a="loc">📍 حدّث اللوكيشن</button><button class="btn" data-a="bnote2">📝 ملاحظة</button>${S.admin ? `<button class="btn r" data-a="delb">حذف</button>` : ""}</div></div>`).join("")}`;
+  <div class="row" style="margin-top:8px"><button class="btn" data-a="stn">🔢 رقم المحطة</button><button class="btn" data-a="loc">📍 حدّث اللوكيشن</button><button class="btn" data-a="bnote2">📝 ملاحظة</button>${S.admin ? `<button class="btn r" data-a="delb">حذف</button>` : ""}</div></div>`).join("")}`;
 }
 
 function reportView() {
@@ -198,12 +242,57 @@ function reportView() {
   <button class="btn r big" id="out">تسجيل خروج</button>`;
 }
 
+const FF = [["name","اسم المنشأة"],["address","العنوان"],["activity","طبيعة النشاط"],["floorsCount","عدد الطوابق"],["phone","رقم تليفون المنشأة"],["safety","اسم مسؤول السلامة"],["workStart","بداية توقيت العمل"],["workEnd","نهاية توقيت العمل"],["holidays","أيام الأجازات"],["panel","مكان لوحة الكهرباء"],["gas","مكان محبس الغاز"],["water","أقرب مصادر مياه للمنشأة"],["hydrant","أقرب حنفيات إطفاء للمنشأة"],["district","الحي"],["fs1","أقرب نقطة إطفاء (1)"],["fs2","أقرب نقطة إطفاء (2)"],["fs3","أقرب نقطة إطفاء (3)"],["police","قسم الشرطة التابع له المنشأة"],["hazards","مصادر الخطورة بالمنشأة"],["medium","الوسيط الإطفائي"],["since","تاريخ الدخول في الخدمة"],["nr","المنشأة المجاورة - يمين"],["nrA","نشاطها"],["nl","المنشأة المجاورة - يسار"],["nlA","نشاطها"],["nf","المنشأة المجاورة - أمامي"],["nfA","نشاطها"],["nb","المنشأة المجاورة - خلفي"],["nbA","نشاطها"]];
+const FL = [["activity","نشاط الطابق"],["foam","طفايات فوم (عدد)"],["powder","طفايات بودرة (عدد)"],["co2","طفايات CO₂ (عدد)"],["otherType","أنواع أخرى (النوع)"],["otherCount","أنواع أخرى (العدد)"]];
+const NUM = ["foam", "powder", "co2", "otherCount"];
+const shrink = f => new Promise(r => { const im = new Image(); im.onload = () => { const k = Math.min(1, 700 / Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = im.width * k; c.height = im.height * k; c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); r(c.toDataURL("image/jpeg", .6)); }; im.src = URL.createObjectURL(f); });
+
+function workView() {
+  const nw = S.banks.filter(b => b.isNew), list = [...S.works].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  return `<div class="card"><div class="t">تسجيل تركيب / تغيير قطعة</div>
+  <label>البنك</label><select id="wb">${S.banks.map(b => `<option value="${b.id}">${esc(title(b))}</option>`).join("")}</select>
+  <label>النوع</label><select id="wt"><option>تركيب جديد</option><option>تغيير قطعة</option></select>
+  <label>القطعة</label><input id="wp" placeholder="مثلاً: سارينة / فلاشر / لوحة تحكم">
+  <label>العدد</label><input id="wq" type="number" value="1"><label>التاريخ</label><input id="wd" type="date" value="${today()}">
+  <label>ملاحظات</label><textarea id="wn" rows="2"></textarea><button class="btn p big" id="addw">حفظ</button></div>
+  ${nw.length ? `<h2>بنوك جديدة لسه متركبش فيها (${nw.length})</h2>` + nw.map(b => `<div class="card pend"><div class="t">${esc(title(b))}</div><div class="m">${esc(b.area)}</div></div>`).join("") : ""}
+  <h2>السجل (${list.length})</h2>${list.map(w => `<div class="card"><div class="row sp"><div class="t">${esc(title(bank(w.bankId)))}</div><span class="tag">${esc(w.type)}</span></div><div class="m">${esc(w.part)} × ${esc(w.qty)} · ${esc(w.date)}</div>${w.notes ? `<div class="note">${esc(w.notes)}</div>` : ""}${S.admin ? `<button class="btn r" data-a="delw" data-w="${w.id}" style="margin-top:6px">حذف</button>` : ""}</div>`).join("") || `<div class="empty">مفيش سجل لسه.</div>`}`;
+}
+
+function formView() {
+  const d = S.draft, b = bank(S.formBank);
+  let h = `<div class="card"><label>اختار البنك</label><select id="fb"><option value="">—</option>${S.banks.map(x => `<option value="${x.id}" ${x.id === S.formBank ? "selected" : ""}>${esc(title(x))}</option>`).join("")}</select></div>`;
+  if (!b) return h + `<div class="empty">اختار بنك علشان تملا استمارته.</div>`;
+  return h + `<div class="card"><div class="t">بيانات المنشأة</div>${FF.map(([k, l]) => `<label>${l}</label><input data-f="${k}" value="${esc(d[k])}">`).join("")}
+  <div class="m">الإحداثيات: ${hasLoc(b) ? b.lat.toFixed(6) + " , " + b.lng.toFixed(6) : "مفيش لوكيشن"}</div>
+  <label>صورة خارجية للمنشأة</label><input type="file" accept="image/*" data-img="photo">${d.photo ? `<img src="${d.photo}" style="max-width:100%;border-radius:8px">` : ""}</div>
+  <h2>الطوابق وطفايات الحريق</h2>
+  ${(d.floors || []).map((f, i) => `<div class="card"><div class="row sp"><div class="t">الطابق ${i + 1}</div><button class="btn r" data-a="delf" data-i="${i}">حذف</button></div>${FL.map(([k, l]) => `<label>${l}</label><input data-fl="${i}.${k}" value="${esc(f[k])}" ${NUM.includes(k) ? 'type="number" inputmode="numeric"' : ""}>`).join("")}
+  <label>رسم كروكي للدور (صورة)</label><input type="file" accept="image/*" data-img="${i}">${f.sketch ? `<img src="${f.sketch}" style="max-width:100%">` : ""}</div>`).join("")}
+  <button class="btn big" data-a="addf" style="margin-bottom:8px">➕ إضافة طابق</button>
+  <button class="btn p big" id="savef">💾 حفظ</button><button class="btn big" id="pdff" style="margin-top:8px">📄 تصدير PDF</button>`;
+}
+
+function formPDF(b, d) {
+  const f = d.floors || [], w = window.open("", "_blank");
+  w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>${esc(title(b))}</title><style>body{font-family:Cairo,Arial;padding:18px;font-size:13px}h2{border-bottom:2px solid #0b5c7a;color:#0b5c7a}table{border-collapse:collapse;width:100%;margin:6px 0}td,th{border:1px solid #888;padding:5px;vertical-align:top}th{background:#e3edf3}.k th{width:35%;text-align:right}.fl{margin:0 0 12px;page-break-inside:avoid}img{max-width:100%;max-height:260px}</style></head><body><h2>استمارة بيانات منشأة - ${esc(title(b))}</h2><table class="k">${FF.map(([k, l]) => `<tr><th>${l}</th><td>${esc(d[k])}</td></tr>`).join("")}<tr><th>الإحداثيات (خط العرض , خط الطول)</th><td>${hasLoc(b) ? b.lat + " , " + b.lng : ""}</td></tr></table>${d.photo ? `<p><img src="${d.photo}"></p>` : ""}
+  <h2 style="page-break-before:always">طفايات الحريق لكل طابق</h2>${f.map((x, i) => `<div class="fl"><b>الطابق ${i + 1}: ${esc(x.activity)}</b><table><tr><th>فوم</th><th>بودرة</th><th>CO₂</th><th>${esc(x.otherType || "نوع آخر")}</th></tr><tr><td>${esc(x.foam)}</td><td>${esc(x.powder)}</td><td>${esc(x.co2)}</td><td>${esc(x.otherCount)}</td></tr></table>${x.sketch ? `<img src="${x.sketch}">` : ""}</div>`).join("") || "<p>لا توجد طوابق.</p>"}</body></html>`);
+  w.document.close(); setTimeout(() => w.print(), 600);
+}
+
+async function workRows(m) {
+  const s = await getDocs(query(collection(db, "works"), where("date", ">=", m + "-01"), where("date", "<=", m + "-31")));
+  return s.docs.map(d => d.data()).map(w => { const b = bank(w.bankId); return { "التاريخ": w.date, "المنطقة": b?.area || "", "البنك": b?.bank || "", "الفرع": b?.branch || "", "النوع": w.type, "القطعة": w.part, "العدد": w.qty, "ملاحظات": w.notes || "" }; }).sort((a, b) => a["التاريخ"].localeCompare(b["التاريخ"]));
+}
+
 function render() {
   if (!S.user) return;
-  const tabs = [["left", "📋", "الباقي"], ["plan", "🏍️", "النهارده"], ["banks", "🏦", "البنوك"], ["rep", "📊", "تقارير"]];
+  const ae = document.activeElement;
+  if (["banks", "work", "form"].includes(S.tab) && ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) return;
+  const tabs = [["left", "📋", "الباقي"], ["plan", "🏍️", "النهارده"], ["banks", "🏦", "البنوك"], ["work", "🔧", "تركيب"], ["form", "📝", "استمارات"], ["rep", "📊", "تقارير"]];
   const scroll = scrollY;
   $("#app").innerHTML = `<header><h1>زيارات الإنذار المرئي<small>${new Date().toLocaleDateString("ar-EG", { month: "long", year: "numeric" })}</small></h1></header>
-  <main>${S.tab === "left" ? leftView() : S.tab === "plan" ? planView() : S.tab === "banks" ? banksView() : reportView()}</main>
+  <main>${{ left: leftView, plan: planView, banks: banksView, work: workView, form: formView, rep: reportView }[S.tab]()}</main>
   <nav>${tabs.map(t => `<button class="${S.tab === t[0] ? "on" : ""}" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join("")}</nav>`;
   scrollTo(0, scroll);
 }
@@ -219,7 +308,7 @@ async function monthRows(m) {
 /* ---------- events ---------- */
 document.addEventListener("click", async e => {
   const t = e.target.closest("[data-t]"); if (t) { S.tab = t.dataset.t; return render(); }
-  const el = e.target.closest("[data-a],#route,#gps,#addb,#xl,#pdf,#addu,#out"); if (!el) return;
+  const el = e.target.closest("[data-a],#seed,#route,#addw,#savef,#pdff,#gps,#addb,#xl,#pdf,#addu,#out"); if (!el) return;
   const vc = e.target.closest("[data-v]"), v = vc && S.visits.find(x => x.id === vc.dataset.v), bc = e.target.closest("[data-b]");
   const a = el.dataset.a, id = el.id;
   try {
@@ -229,22 +318,43 @@ document.addEventListener("click", async e => {
     else if (a === "bnote") { const b = bank(v.bankId), n = prompt("ملاحظات على " + title(b), b.notes || ""); if (n !== null) await updateDoc(doc(db, "banks", b.id), { notes: n }); }
     else if (a === "bnote2") { const b = bank(bc.dataset.b), n = prompt("ملاحظات على " + title(b), b.notes || ""); if (n !== null) await updateDoc(doc(db, "banks", b.id), { notes: n }); }
     else if (a === "again") { const n = S.visits.filter(x => x.bankId === v.bankId).length + 1; await setDoc(doc(db, "visits", `${v.bankId}_${S.visits[0].month}_${n}`), { bankId: v.bankId, month: v.month, n, done: false, note: "" }); toast("اتضافت زيارة جديدة"); }
+    else if (a === "stn") { const b = bank(bc.dataset.b), n = prompt("رقم المحطة - " + title(b), b.station || ""); if (n !== null) await updateDoc(doc(db, "banks", b.id), { station: n.trim() }); }
+    else if (id === "seed") {
+      if (!confirm("هتتضاف " + SEED.length + " فرع (اللي موجود قبل كده مش هيتكرر). كمّل؟")) return;
+      let c = 0; for (let i = 0; i < SEED.length; i++) { const [bk, br, ar, la, lo] = SEED[i]; if (S.banks.some(x => x.bank === bk && x.branch === br)) continue;
+        await setDoc(doc(db, "banks", "seed" + String(i).padStart(3, "0")), { bank: bk, branch: br, station: "", area: ar, notes: "", lat: la, lng: lo, createdAt: serverTimestamp() }); c++; }
+      toast("اتضاف " + c + " فرع");
+    }
     else if (a === "loc") { const p = await getPos(); await updateDoc(doc(db, "banks", bc.dataset.b), { lat: p.lat, lng: p.lng }); toast("اتحدّث اللوكيشن"); }
     else if (a === "delb") { if (confirm("تحذف البنك ده؟")) await deleteDoc(doc(db, "banks", bc.dataset.b)); }
     else if (id === "route") buildRoute();
     else if (id === "gps") { const p = await getPos(); $("#nl").value = p.lat.toFixed(6) + "," + p.lng.toFixed(6); }
     else if (id === "addb") {
       const nm = $("#nb").value.trim(), br = $("#nr").value.trim(); if (!nm || !br) return toast("اكتب اسم البنك والفرع");
-      const d = { bank: nm, branch: br, station: $("#ns").value.trim(), area: $("#na").value, notes: $("#nn").value.trim(), lat: null, lng: null, createdAt: serverTimestamp() };
+      const d = { bank: nm, branch: br, station: $("#ns").value.trim(), area: $("#na").value, notes: $("#nn").value.trim(), isNew: $("#nnw").checked, lat: null, lng: null, createdAt: serverTimestamp() };
       const ll = $("#nl").value.split(",").map(Number); if (ll.length === 2 && ll.every(isFinite)) { d.lat = ll[0]; d.lng = ll[1]; }
       await addDoc(collection(db, "banks"), d); toast("اتضاف البنك"); S.tab = "banks"; render();
     }
-    else if (id === "xl") { const m = $("#rm").value, rows = await monthRows(m); if (!rows.length) return toast("مفيش بيانات للشهر ده"); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), m); wb.Workbook = { Views: [{ RTL: true }] }; XLSX.writeFile(wb, `زيارات-${m}.xlsx`); }
-    else if (id === "pdf") {
-      const m = $("#rm").value, rows = await monthRows(m); if (!rows.length) return toast("مفيش بيانات للشهر ده");
-      const k = Object.keys(rows[0]), w = window.open("", "_blank");
-      w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>زيارات ${m}</title><style>body{font-family:Cairo,Arial;padding:16px}table{border-collapse:collapse;width:100%;font-size:12px}td,th{border:1px solid #888;padding:5px}th{background:#e3edf3}</style></head><body><h2>تقرير زيارات الإنذار المرئي - ${m}</h2><table><tr>${k.map(x => `<th>${x}</th>`).join("")}</tr>${rows.map(r => `<tr>${k.map(x => `<td>${esc(r[x])}</td>`).join("")}</tr>`).join("")}</table></body></html>`);
-      w.document.close(); setTimeout(() => w.print(), 500);
+    else if (a === "addf") { (S.draft.floors = S.draft.floors || []).push({}); render(); }
+    else if (a === "delf") { S.draft.floors.splice(+el.dataset.i, 1); render(); }
+    else if (a === "delw") { if (confirm("تحذف السجل ده؟")) await deleteDoc(doc(db, "works", el.dataset.w)); }
+    else if (id === "addw") {
+      const b = $("#wb").value, p = $("#wp").value.trim(); if (!b || !p) return toast("اختار البنك واكتب القطعة"); const t = $("#wt").value;
+      await addDoc(collection(db, "works"), { bankId: b, type: t, part: p, qty: +$("#wq").value || 1, date: $("#wd").value || today(), notes: $("#wn").value.trim(), createdAt: serverTimestamp() });
+      if (t === "تركيب جديد") await updateDoc(doc(db, "banks", b), { isNew: false }); toast("اتسجل ✔");
+    }
+    else if (id === "savef") { await setDoc(doc(db, "surveys", S.formBank), { ...S.draft, updatedAt: Date.now() }); toast("اتحفظت الاستمارة ✔"); }
+    else if (id === "pdff") formPDF(bank(S.formBank), S.draft);
+    else if (id === "xl" || id === "pdf") {
+      const m = $("#rm").value, rows = await monthRows(m), ws = await workRows(m);
+      if (!rows.length && !ws.length) return toast("مفيش بيانات للشهر ده");
+      if (id === "xl") { const wb = XLSX.utils.book_new(); if (rows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "زيارات"); if (ws.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ws), "تركيب وتغيير"); wb.Workbook = { Views: [{ RTL: true }] }; XLSX.writeFile(wb, `تقرير-${m}.xlsx`); }
+      else {
+        const tb = r => { if (!r.length) return ""; const k = Object.keys(r[0]); return `<table><tr>${k.map(x => `<th>${x}</th>`).join("")}</tr>${r.map(o => `<tr>${k.map(x => `<td>${esc(o[x])}</td>`).join("")}</tr>`).join("")}</table>`; };
+        const w = window.open("", "_blank");
+        w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>تقرير ${m}</title><style>body{font-family:Cairo,Arial;padding:16px}table{border-collapse:collapse;width:100%;font-size:12px}td,th{border:1px solid #888;padding:5px}th{background:#e3edf3}</style></head><body><h2>تقرير الزيارات - ${m}</h2>${tb(rows)}${ws.length ? "<h2>تركيب وتغيير</h2>" + tb(ws) : ""}</body></html>`);
+        w.document.close(); setTimeout(() => w.print(), 500);
+      }
     }
     else if (id === "addu") {
       const u = $("#cu").value.trim().toLowerCase(), p = $("#cp").value; if (!u || p.length < 6) return toast("اليوزر والباسورد (6+) مطلوبين");
@@ -254,7 +364,15 @@ document.addEventListener("click", async e => {
     else if (id === "out") signOut(auth);
   } catch (err) { toast(err.message || "حصل خطأ"); }
 });
-document.addEventListener("change", e => {
+document.addEventListener("input", e => { const t = e.target; if (t.dataset.f) S.draft[t.dataset.f] = t.value; else if (t.dataset.fl) { const [i, k] = t.dataset.fl.split("."); S.draft.floors[+i][k] = t.value; } });
+document.addEventListener("change", async e => {
+  const t = e.target;
+  if (t.id === "fb") {
+    S.formBank = t.value; t.blur(); const b = bank(S.formBank);
+    if (b) { const r = await getDoc(doc(db, "surveys", b.id)); S.draft = r.exists() ? r.data() : { name: title(b), address: b.area, floors: [] }; if (!S.draft.floors) S.draft.floors = []; }
+    render();
+  }
+  if (t.dataset.img !== undefined && t.files[0]) { const u = await shrink(t.files[0]); if (t.dataset.img === "photo") S.draft.photo = u; else S.draft.floors[+t.dataset.img].sketch = u; t.blur(); render(); }
   if (e.target.id === "af") { S.area = e.target.value; render(); }
   if (e.target.id === "rm") S.month = e.target.value;
 });
