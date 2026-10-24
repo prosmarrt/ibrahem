@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b5c7a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>زيارات الإنذار المرئي</title>
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%D8%B2%D9%8A%D8%A7%D8%B1%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A5%D9%86%D8%B0%D8%A7%D8%B1%22%2C%22short_name%22%3A%22%D8%B2%D9%8A%D8%A7%D8%B1%D8%A7%D8%AA%22%2C%22display%22%3A%22standalone%22%2C%22dir%22%3A%22rtl%22%2C%22lang%22%3A%22ar%22%2C%22background_color%22%3A%22%23eef2f5%22%2C%22theme_color%22%3A%22%230b5c7a%22%2C%22start_url%22%3A%22.%22%7D">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#eef2f5;--ink:#10222e;--mut:#5d7080;--pri:#0b5c7a;--pend:#d9480f;--done:#1b8a5a;--card:#fff;--line:#d5dee5}
+*{box-sizing:border-box}
+body{margin:0;font-family:Cairo,system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:84px}
+button,input,select,textarea{font:inherit}
+header{background:var(--pri);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+header h1{font-size:18px;margin:0;font-weight:800}
+header small{opacity:.85;display:block;font-weight:400}
+main{padding:12px;max-width:760px;margin:auto}
+nav{position:fixed;bottom:0;inset-inline:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;padding:10px 2px;font-size:13px;color:var(--mut);font-weight:600}
+nav button b{display:block;font-size:20px}
+nav button.on{color:var(--pri);box-shadow:inset 0 3px 0 var(--pri)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+.card.done{border-inline-start:6px solid var(--done);background:#f4fbf7}
+.card.pend{border-inline-start:6px solid var(--pend)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sp{justify-content:space-between}
+.t{font-weight:800;font-size:16px}
+.m{color:var(--mut);font-size:13px}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:#e3edf3;color:var(--pri);font-weight:600}
+.btn{border:1px solid var(--pri);background:#fff;color:var(--pri);padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer}
+.btn.p{background:var(--pri);color:#fff}.btn.g{background:var(--done);border-color:var(--done);color:#fff}.btn.r{border-color:#b42318;color:#b42318}
+.btn.big{width:100%;padding:14px;font-size:17px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;background:#fff;margin:4px 0 8px}
+label{font-size:13px;color:var(--mut);font-weight:600}
+h2{font-size:15px;margin:16px 0 8px;color:var(--pri)}
+.note{background:#fff8e1;border-radius:6px;padding:6px 8px;font-size:13px;margin-top:6px}
+.bar{height:8px;background:#dbe5eb;border-radius:9px;overflow:hidden;margin:6px 0 10px}.bar i{display:block;height:100%;background:var(--done)}
+.login{max-width:340px;margin:12vh auto;padding:0 16px}
+.empty{text-align:center;color:var(--mut);padding:30px 10px}
+.toast{position:fixed;top:70px;inset-inline:16px;background:#10222e;color:#fff;padding:10px 14px;border-radius:8px;z-index:9;text-align:center}
+:focus-visible{outline:3px solid #f59f00;outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, getDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const cfg = {
+  apiKey: "AIzaSyBPx9qM2pPfVYk-Ie-zabVDS1OsQ1sO5OE",
+  authDomain: "ibrahem-hassn.firebaseapp.com",
+  projectId: "ibrahem-hassn",
+  storageBucket: "ibrahem-hassn.firebasestorage.app",
+  messagingSenderId: "931292515336",
+  appId: "1:931292515336:web:e73e61240c5cb9d311d5bd"
+};
+const fb = initializeApp(cfg), auth = getAuth(fb), db = getFirestore(fb);
+const AREAS = ["التجمع الخامس", "بدر", "العاصمة الإدارية"];
+const DOMAIN = "@ibrahem.app";
+
+const S = { user: null, admin: false, tab: "left", banks: [], visits: [], plan: [], area: "", month: mk(new Date()), loaded: 0, ordered: null };
+const $ = s => document.querySelector(s);
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+function mk(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
+function toast(m) { const e = document.createElement("div"); e.className = "toast"; e.textContent = m; document.body.append(e); setTimeout(() => e.remove(), 2600); }
+const bank = id => S.banks.find(b => b.id === id);
+const title = b => b ? `${b.bank} - ${b.branch}` : "(بنك محذوف)";
+
+/* ---------- login ---------- */
+function loginView(err = "") {
+  $("#app").innerHTML = `<div class="login"><h1 style="text-align:center">زيارات الإنذار المرئي</h1>
+  <div class="card"><label>اسم المستخدم</label><input id="u" autocomplete="username" autocapitalize="none">
+  <label>كلمة السر</label><input id="p" type="password" autocomplete="current-password">
+  <button class="btn p big" id="go">دخول</button>${err ? `<p style="color:#b42318">${esc(err)}</p>` : ""}</div></div>`;
+  const go = async () => {
+    try { await signInWithEmailAndPassword(auth, $("#u").value.trim().toLowerCase() + DOMAIN, $("#p").value); }
+    catch (e) { loginView("اليوزر أو الباسورد غلط"); }
+  };
+  $("#go").onclick = go; $("#p").onkeydown = e => e.key === "Enter" && go();
+}
+
+onAuthStateChanged(auth, async u => {
+  if (!u) { S.user = null; return loginView(); }
+  S.user = u;
+  const r = await getDoc(doc(db, "users", u.uid));
+  S.admin = r.exists() && r.data().role === "admin";
+  start();
+});
+
+/* ---------- data ---------- */
+let unsub = [];
+function start() {
+  unsub.forEach(f => f()); unsub = []; S.loaded = 0;
+  unsub.push(onSnapshot(collection(db, "banks"), s => { S.banks = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.bank + a.branch).localeCompare(b.bank + b.branch, "ar")); S.loaded |= 1; ensureMonth(); render(); }));
+  unsub.push(onSnapshot(query(collection(db, "visits"), where("month", "==", mk(new Date()))), s => { S.visits = s.docs.map(d => ({ id: d.id, ...d.data() })); S.loaded |= 2; ensureMonth(); render(); }));
+  unsub.push(onSnapshot(doc(db, "plans", today()), s => { S.plan = s.exists() ? s.data().ids || [] : []; render(); }));
+  render();
+}
+/* أول كل شهر: كل بنك ياخد زيارة جديدة تلقائي (id ثابت علشان ما تتكررش) */
+function ensureMonth() {
+  if (S.loaded !== 3) return;
+  const m = mk(new Date());
+  S.banks.forEach(b => { if (!S.visits.some(v => v.bankId === b.id)) setDoc(doc(db, "visits", `${b.id}_${m}_1`), { bankId: b.id, month: m, n: 1, done: false, note: "" }); });
+}
+
+/* ---------- geo ---------- */
+function getPos() {
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error("المتصفح مش بيدعم اللوكيشن"));
+    navigator.geolocation.getCurrentPosition(p => res({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => rej(new Error("شغّل الـ GPS واسمح للصفحة بالوصول للموقع وجرب تاني")), { enableHighAccuracy: true, timeout: 15000 });
+  });
+}
+function dist(a, b) { const R = 6371, r = x => x * Math.PI / 180, dLa = r(b.lat - a.lat), dLo = r(b.lng - a.lng); const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
+const hasLoc = b => b && isFinite(b.lat) && isFinite(b.lng) && b.lat !== null;
+const mapsTo = b => `https://www.google.com/maps/dir/?api=1&destination=${b.lat},${b.lng}&travelmode=two-wheeler`;
+
+/* أقرب بنك فأقرب بنك، بادئ من مكانه الحالي */
+async function buildRoute() {
+  const items = S.plan.map(id => S.visits.find(v => v.id === id)).filter(v => v && !v.done && hasLoc(bank(v.bankId)));
+  if (!items.length) return toast("اختار بنوك ليها لوكيشن في خطة النهارده");
+  let cur;
+  try { cur = await getPos(); } catch (e) { return toast(e.message); }
+  const left = [...items], out = []; let p = cur;
+  while (left.length) { let bi = 0, bd = 1e9; left.forEach((v, i) => { const d = dist(p, bank(v.bankId)); if (d < bd) { bd = d; bi = i; } }); const v = left.splice(bi, 1)[0]; out.push(v); p = bank(v.bankId); }
+  S.ordered = out.map(v => v.id); render();
+  const pts = out.map(v => bank(v.bankId)); const dest = pts[pts.length - 1], way = pts.slice(0, -1).slice(0, 9);
+  window.open(`https://www.google.com/maps/dir/?api=1&origin=${cur.lat},${cur.lng}&destination=${dest.lat},${dest.lng}${way.length ? "&waypoints=" + way.map(b => b.lat + "," + b.lng).join("|") : ""}&travelmode=two-wheeler`, "_blank");
+  if (pts.length > 10) toast("جوجل ماب بياخد 10 نقط بس، افتح الباقي بالترتيب من الأزرار");
+}
+
+/* ---------- views ---------- */
+function visitCard(v, opt = {}) {
+  const b = bank(v.bankId); if (!b) return "";
+  const inPlan = S.plan.includes(v.id);
+  const idx = S.ordered ? S.ordered.indexOf(v.id) : -1;
+  return `<div class="card ${v.done ? "done" : "pend"}" data-v="${v.id}">
+  <div class="row sp"><div class="t">${idx >= 0 ? `<span class="tag" style="background:var(--pri);color:#fff">${idx + 1}</span> ` : ""}${esc(title(b))}</div><span class="tag">${esc(b.area)}</span></div>
+  <div class="m">محطة ${esc(b.station || "-")}${v.n > 1 ? " · زيارة رقم " + v.n : ""}${v.done ? " · اتعملت " + new Date(v.doneAt).toLocaleDateString("ar-EG") : ""}</div>
+  ${b.notes ? `<div class="note">📝 ${esc(b.notes)}</div>` : ""}${v.note ? `<div class="note">🔧 ${esc(v.note)}</div>` : ""}
+  <div class="row" style="margin-top:8px">
+  ${v.done ? `<button class="btn" data-a="undo">رجوع</button>` : `<button class="btn g" data-a="done">✔ تم</button>`}
+  ${hasLoc(b) ? `<a class="btn" href="${mapsTo(b)}" target="_blank" style="text-decoration:none">📍 اتجاهات</a>` : `<span class="m">مفيش لوكيشن</span>`}
+  ${!v.done ? `<button class="btn ${inPlan ? "r" : ""}" data-a="plan">${inPlan ? "شيل من الخطة" : "➕ خطة النهارده"}</button>` : ""}
+  <button class="btn" data-a="bnote">📝 ملاحظة البنك</button><button class="btn" data-a="again">زيارة تانية</button>
+  </div></div>`;
+}
+
+function leftView() {
+  const list = S.visits.filter(v => bank(v.bankId) && (!S.area || bank(v.bankId).area === S.area));
+  const done = list.filter(v => v.done).length, pct = list.length ? Math.round(done / list.length * 100) : 0;
+  let h = `<select id="af"><option value="">كل المناطق</option>${AREAS.map(a => `<option ${S.area === a ? "selected" : ""}>${a}</option>`).join("")}</select>
+  <div class="m">الشهر ده: اتعمل ${done} من ${list.length}</div><div class="bar"><i style="width:${pct}%"></i></div>`;
+  if (!list.length) return h + `<div class="empty">مفيش بنوك لسه. افتح تبويب "البنوك" وضيف أول بنك.</div>`;
+  const areas = S.area ? [S.area] : [...new Set(list.map(v => bank(v.bankId).area))];
+  areas.forEach(a => {
+    const al = list.filter(v => bank(v.bankId).area === a).sort((x, y) => x.done - y.done);
+    h += `<h2>${esc(a)} · باقي ${al.filter(v => !v.done).length} من ${al.length}</h2>` + al.map(v => visitCard(v)).join("");
+  });
+  return h;
+}
+
+function planView() {
+  const items = S.plan.map(id => S.visits.find(v => v.id === id)).filter(Boolean);
+  const sorted = S.ordered ? [...items].sort((a, b) => S.ordered.indexOf(a.id) - S.ordered.indexOf(b.id)) : items;
+  return `<div class="card"><div class="t">خطة النهارده (${items.length})</div><div class="m">ضيف البنوك من تبويب "الباقي"، وبعدين دوس ابدأ الطريق وهيرتبهم من أقرب واحد لمكانك.</div></div>
+  ${items.length ? `<button class="btn p big" id="route" style="margin-bottom:12px">🏍️ ابدأ الطريق</button>` : ""}
+  ${sorted.map(v => visitCard(v)).join("") || `<div class="empty">الخطة فاضية.</div>`}`;
+}
+
+function banksView() {
+  return `<div class="card"><div class="t">إضافة بنك / فرع</div>
+  <label>اسم البنك</label><input id="nb"><label>اسم الفرع</label><input id="nr">
+  <label>رقم المحطة</label><input id="ns" inputmode="numeric"><label>المنطقة</label><select id="na">${AREAS.map(a => `<option>${a}</option>`).join("")}</select>
+  <label>اللوكيشن</label><input id="nl" placeholder="خط العرض,خط الطول" dir="ltr">
+  <button class="btn" id="gps">📍 هات موقعي الحالي</button>
+  <label style="display:block;margin-top:8px">ملاحظات</label><textarea id="nn" rows="2"></textarea>
+  <button class="btn p big" id="addb">حفظ البنك</button></div>
+  <h2>كل البنوك (${S.banks.length})</h2>
+  ${S.banks.map(b => `<div class="card" data-b="${b.id}"><div class="row sp"><div class="t">${esc(title(b))}</div><span class="tag">${esc(b.area)}</span></div>
+  <div class="m">محطة ${esc(b.station || "-")} · ${hasLoc(b) ? "اللوكيشن متسجل ✅" : "من غير لوكيشن ❌"}</div>
+  <div class="row" style="margin-top:8px"><button class="btn" data-a="loc">📍 حدّث اللوكيشن</button><button class="btn" data-a="bnote2">📝 ملاحظة</button>${S.admin ? `<button class="btn r" data-a="delb">حذف</button>` : ""}</div></div>`).join("")}`;
+}
+
+function reportView() {
+  return `<div class="card"><div class="t">تقرير الزيارات</div><label>الشهر</label><input type="month" id="rm" value="${S.month}">
+  <div class="row"><button class="btn p" id="xl">📊 Excel</button><button class="btn p" id="pdf">📄 PDF</button></div></div>
+  ${S.admin ? `<div class="card"><div class="t">إضافة مستخدم</div><label>اسم المستخدم (إنجليزي)</label><input id="cu" dir="ltr"><label>كلمة السر (6 حروف على الأقل)</label><input id="cp" dir="ltr">
+  <button class="btn" id="addu">إنشاء حساب</button></div>` : ""}
+  <button class="btn r big" id="out">تسجيل خروج</button>`;
+}
+
+function render() {
+  if (!S.user) return;
+  const tabs = [["left", "📋", "الباقي"], ["plan", "🏍️", "النهارده"], ["banks", "🏦", "البنوك"], ["rep", "📊", "تقارير"]];
+  const scroll = scrollY;
+  $("#app").innerHTML = `<header><h1>زيارات الإنذار المرئي<small>${new Date().toLocaleDateString("ar-EG", { month: "long", year: "numeric" })}</small></h1></header>
+  <main>${S.tab === "left" ? leftView() : S.tab === "plan" ? planView() : S.tab === "banks" ? banksView() : reportView()}</main>
+  <nav>${tabs.map(t => `<button class="${S.tab === t[0] ? "on" : ""}" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join("")}</nav>`;
+  scrollTo(0, scroll);
+}
+
+/* ---------- reports ---------- */
+async function monthRows(m) {
+  const s = await getDocs(query(collection(db, "visits"), where("month", "==", m)));
+  const bs = {}; S.banks.forEach(b => bs[b.id] = b);
+  return s.docs.map(d => d.data()).filter(v => bs[v.bankId]).map(v => { const b = bs[v.bankId]; return { "المنطقة": b.area, "البنك": b.bank, "الفرع": b.branch, "المحطة": b.station || "", "رقم الزيارة": v.n || 1, "الحالة": v.done ? "تمت" : "لم تتم", "تاريخ الزيارة": v.done && v.doneAt ? new Date(v.doneAt).toLocaleDateString("ar-EG") : "", "ملاحظات": [b.notes, v.note].filter(Boolean).join(" | ") }; })
+    .sort((a, b) => a["المنطقة"].localeCompare(b["المنطقة"], "ar") || (a["الحالة"] === "لم تتم" ? -1 : 1));
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", async e => {
+  const t = e.target.closest("[data-t]"); if (t) { S.tab = t.dataset.t; return render(); }
+  const el = e.target.closest("[data-a],#route,#gps,#addb,#xl,#pdf,#addu,#out"); if (!el) return;
+  const vc = e.target.closest("[data-v]"), v = vc && S.visits.find(x => x.id === vc.dataset.v), bc = e.target.closest("[data-b]");
+  const a = el.dataset.a, id = el.id;
+  try {
+    if (a === "done") { const note = prompt("ملاحظة عن الزيارة (اختياري):", v.note || ""); if (note === null) return; await updateDoc(doc(db, "visits", v.id), { done: true, doneAt: Date.now(), note }); toast("اتسجلت ✔"); }
+    else if (a === "undo") await updateDoc(doc(db, "visits", v.id), { done: false, doneAt: null });
+    else if (a === "plan") { const ids = S.plan.includes(v.id) ? S.plan.filter(x => x !== v.id) : [...S.plan, v.id]; S.ordered = null; await setDoc(doc(db, "plans", today()), { ids }); }
+    else if (a === "bnote") { const b = bank(v.bankId), n = prompt("ملاحظات على " + title(b), b.notes || ""); if (n !== null) await updateDoc(doc(db, "banks", b.id), { notes: n }); }
+    else if (a === "bnote2") { const b = bank(bc.dataset.b), n = prompt("ملاحظات على " + title(b), b.notes || ""); if (n !== null) await updateDoc(doc(db, "banks", b.id), { notes: n }); }
+    else if (a === "again") { const n = S.visits.filter(x => x.bankId === v.bankId).length + 1; await setDoc(doc(db, "visits", `${v.bankId}_${S.visits[0].month}_${n}`), { bankId: v.bankId, month: v.month, n, done: false, note: "" }); toast("اتضافت زيارة جديدة"); }
+    else if (a === "loc") { const p = await getPos(); await updateDoc(doc(db, "banks", bc.dataset.b), { lat: p.lat, lng: p.lng }); toast("اتحدّث اللوكيشن"); }
+    else if (a === "delb") { if (confirm("تحذف البنك ده؟")) await deleteDoc(doc(db, "banks", bc.dataset.b)); }
+    else if (id === "route") buildRoute();
+    else if (id === "gps") { const p = await getPos(); $("#nl").value = p.lat.toFixed(6) + "," + p.lng.toFixed(6); }
+    else if (id === "addb") {
+      const nm = $("#nb").value.trim(), br = $("#nr").value.trim(); if (!nm || !br) return toast("اكتب اسم البنك والفرع");
+      const d = { bank: nm, branch: br, station: $("#ns").value.trim(), area: $("#na").value, notes: $("#nn").value.trim(), lat: null, lng: null, createdAt: serverTimestamp() };
+      const ll = $("#nl").value.split(",").map(Number); if (ll.length === 2 && ll.every(isFinite)) { d.lat = ll[0]; d.lng = ll[1]; }
+      await addDoc(collection(db, "banks"), d); toast("اتضاف البنك"); S.tab = "banks"; render();
+    }
+    else if (id === "xl") { const m = $("#rm").value, rows = await monthRows(m); if (!rows.length) return toast("مفيش بيانات للشهر ده"); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), m); wb.Workbook = { Views: [{ RTL: true }] }; XLSX.writeFile(wb, `زيارات-${m}.xlsx`); }
+    else if (id === "pdf") {
+      const m = $("#rm").value, rows = await monthRows(m); if (!rows.length) return toast("مفيش بيانات للشهر ده");
+      const k = Object.keys(rows[0]), w = window.open("", "_blank");
+      w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>زيارات ${m}</title><style>body{font-family:Cairo,Arial;padding:16px}table{border-collapse:collapse;width:100%;font-size:12px}td,th{border:1px solid #888;padding:5px}th{background:#e3edf3}</style></head><body><h2>تقرير زيارات الإنذار المرئي - ${m}</h2><table><tr>${k.map(x => `<th>${x}</th>`).join("")}</tr>${rows.map(r => `<tr>${k.map(x => `<td>${esc(r[x])}</td>`).join("")}</tr>`).join("")}</table></body></html>`);
+      w.document.close(); setTimeout(() => w.print(), 500);
+    }
+    else if (id === "addu") {
+      const u = $("#cu").value.trim().toLowerCase(), p = $("#cp").value; if (!u || p.length < 6) return toast("اليوزر والباسورد (6+) مطلوبين");
+      const sec = initializeApp(cfg, "sec" + Date.now()), r = await createUserWithEmailAndPassword(getAuth(sec), u + DOMAIN, p);
+      await setDoc(doc(db, "users", r.user.uid), { username: u, role: "user" }); await signOut(getAuth(sec)); toast("اتعمل الحساب");
+    }
+    else if (id === "out") signOut(auth);
+  } catch (err) { toast(err.message || "حصل خطأ"); }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "af") { S.area = e.target.value; render(); }
+  if (e.target.id === "rm") S.month = e.target.value;
+});
+</script>
+</body>
+</html>
